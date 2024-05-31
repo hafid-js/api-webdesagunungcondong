@@ -1,8 +1,12 @@
 package com.hafidtech.api_webdesagunungcondong.services;
 
+import com.hafidtech.api_webdesagunungcondong.entities.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
 
 
 public interface JWTService {
@@ -13,4 +17,5 @@ public interface JWTService {
 
     boolean isTokenValid(String token, UserDetails userDetails);
 
+    String generateRefreshToken(Map<String, Object> extraClaims, UserDetails userDetails);
 }
