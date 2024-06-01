@@ -1,9 +1,15 @@
 package com.hafidtech.api_webdesagunungcondong.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 @Data
-public class SignUpRequest {
+@AllArgsConstructor
+@EqualsAndHashCode
+@ToString
+public class RegistrationRequest {
 
     private String firstName;
 

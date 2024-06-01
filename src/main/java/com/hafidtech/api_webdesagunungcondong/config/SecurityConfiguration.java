@@ -4,9 +4,9 @@ package com.hafidtech.api_webdesagunungcondong.config;
 import com.hafidtech.api_webdesagunungcondong.entities.Role;
 import com.hafidtech.api_webdesagunungcondong.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -25,17 +25,19 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfiguration {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    private final UserService userService;
+    @Autowired
+    private UserService userService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request -> request.requestMatchers("/api/v1/auth/**")
                         .permitAll()
-                        .requestMatchers("/api/v1/admin").hasAuthority(Role.ADMIN.name())
-                        .requestMatchers("/api/v1/user").hasAuthority(Role.USER.name())
+                        .requestMatchers("/api/v1/admin/**").hasAuthority(Role.ADMIN.name())
+                        .requestMatchers("/api/v1/user/**").hasAuthority(Role.USER.name())
                         .anyRequest().authenticated())
 
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -2,6 +2,8 @@ package com.hafidtech.api_webdesagunungcondong.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,22 +15,30 @@ import java.util.List;
 @Data
 @Entity
 @Table(name = "user")
+@EqualsAndHashCode
+@NoArgsConstructor
 public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-
     private String firstName;
-
     private String lastName;
-
     private String email;
-
     private String password;
-
+    @Enumerated(EnumType.STRING)
     private Role role;
+    private boolean isEnabled = false;
 
+    public User(Integer id, String firstName, String lastName, String email, String password, Role role, boolean isEnabled) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+        this.role = role;
+        this.isEnabled = isEnabled;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -46,17 +56,12 @@ public class User implements UserDetails {
     }
 
     @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
     @Override
-    public boolean isEnabled() {
-        return true;
+    public boolean isAccountNonLocked() {
+        return UserDetails.super.isAccountNonLocked();
     }
 }
