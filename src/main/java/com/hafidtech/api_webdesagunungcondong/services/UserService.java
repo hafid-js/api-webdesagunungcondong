@@ -18,20 +18,15 @@ public interface UserService {
     UserDetailsService userDetailsService();
     User registration(RegistrationRequest registrationRequest);
     JwtAuthenticationResponse login(LoginRequest loginRequest);
-
     VerificationToken generateNewVerificationToken(String oldToken);
     JwtAuthenticationResponse refreshToken(RefreshTokenRequest refreshTokenRequest);
-
     List<User> getUsers();
-
     void createPasswordResetTokenForUser(User user, String passwordToken);
     String validatePasswordResetToken(String passwordResetToken);
-
     String validateToken(String theToken);
-
     User findByRole(Role role);
-
     Optional<User> findByEmail(String email);
-
     void saveUserVerificationToken(User theUser, String verificationToken);
+    User findUserByPasswordToken(String passwordResetToken);
+    void resetUserPassword(User user, String newPassword);
 }

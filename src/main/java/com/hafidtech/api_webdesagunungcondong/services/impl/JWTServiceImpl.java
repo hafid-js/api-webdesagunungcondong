@@ -1,6 +1,7 @@
 package com.hafidtech.api_webdesagunungcondong.services.impl;
 
 import com.hafidtech.api_webdesagunungcondong.entities.User;
+import com.hafidtech.api_webdesagunungcondong.logout.BlackList;
 import com.hafidtech.api_webdesagunungcondong.services.JWTService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwt;
@@ -10,6 +11,8 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,8 @@ import java.util.function.Function;
 @Service
 public class JWTServiceImpl implements JWTService {
 
+    @Autowired
+    private BlackList blackList;
 
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder().setSubject(userDetails.getUsername())
@@ -62,7 +67,7 @@ public class JWTServiceImpl implements JWTService {
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUserName(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token) && !blackList.isBlacklisted(token));
     }
 
     private boolean isTokenExpired(String token) {

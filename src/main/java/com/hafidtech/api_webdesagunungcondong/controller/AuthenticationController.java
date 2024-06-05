@@ -5,18 +5,24 @@ import com.hafidtech.api_webdesagunungcondong.entities.User;
 import com.hafidtech.api_webdesagunungcondong.entities.token.VerificationToken;
 import com.hafidtech.api_webdesagunungcondong.event.RegistrationCompleteEvent;
 import com.hafidtech.api_webdesagunungcondong.event.listener.RegistrationCompleteEventListener;
+import com.hafidtech.api_webdesagunungcondong.logout.BlackList;
+import com.hafidtech.api_webdesagunungcondong.repository.PasswordResetTokenRepository;
 import com.hafidtech.api_webdesagunungcondong.repository.UserRepository;
 import com.hafidtech.api_webdesagunungcondong.repository.VerificationTokenRepository;
 import com.hafidtech.api_webdesagunungcondong.services.UserService;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import javax.security.auth.login.LoginException;
 import java.io.UnsupportedEncodingException;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,16 +30,19 @@ import java.util.UUID;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/auth")
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class AuthenticationController {
 
+    private UserService authenticationService;
+    private ApplicationEventPublisher publisher;
+    private VerificationTokenRepository tokenRepository;
+    private HttpServletRequest servletRequest;
+    private RegistrationCompleteEventListener eventListener;
+    private UserRepository userRepository;
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+    private PasswordEncoder passwordEncoder;
+    private BlackList blackList;
 
-    private final UserService authenticationService;
-    private final ApplicationEventPublisher publisher;
-    private final VerificationTokenRepository tokenRepository;
-    private final HttpServletRequest servletRequest;
-    private final RegistrationCompleteEventListener eventListener;
-    private final UserRepository userRepository;
 
     @PostMapping("/register")
     public String register(@RequestBody RegistrationRequest registrationRequest,  final HttpServletRequest request) {
@@ -85,15 +94,36 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<? extends Object> login(@RequestBody LoginRequest loginRequest) {
         boolean isEnabled = false;
-       Optional<User> checkEmailStatus = userRepository.findByEmailAndIsEnabled(loginRequest.getEmail(), isEnabled);
-       try{
-           if(checkEmailStatus.get().isEnabled() == false) {
-               return new ResponseEntity<String>("you need verification your email before login",HttpStatus.UNAUTHORIZED);
-           }
-       } catch (Exception e) {
-           e.printStackTrace();
-       }
+        Optional<User> checkEmailStatus = userRepository.findByEmailAndIsEnabled(loginRequest.getEmail(), isEnabled);
+        if (checkEmailStatus.isPresent() && checkEmailStatus.get().isEnabled() == false) {
+            return new ResponseEntity<String>("you need verification your email before login", HttpStatus.UNAUTHORIZED);
+        }
+
+//        String password = passwordEncoder.encode(loginRequest.getPassword());
+//        User checkUsernameAndPassword = userRepository.findByEmailAndPassword(loginRequest.getEmail(), password);
+//
+//        log.info(checkUsernameAndPassword.getEmail());
+//        log.info(checkUsernameAndPassword.getPassword());
+//        if (checkUsernameAndPassword == null) {
+//            return new ResponseEntity<String>("Email atau Password yang anda masukkan salah!, silahkan periksa kembali", HttpStatus.BAD_REQUEST);
+//        } else {
+//           log.info("Berhasil");
+//        }
+
         return ResponseEntity.ok(authenticationService.login(loginRequest));
+    }
+
+
+    @PostMapping("/logout")
+    @PreAuthorize("hasAuthority('USER') or hasAuthority('ADMIN')")
+    public String logout(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        String token = null;
+        if(authHeader != null && authHeader.startsWith("Bearer")) {
+            token = authHeader.substring(7);
+        }
+        blackList.blackListToken(token);
+        return "You have successfully logged out!";
     }
 
     @PostMapping("/refresh")
@@ -102,38 +132,45 @@ public class AuthenticationController {
     }
 
     @PostMapping("/password-reset-request")
-    public String resetPasswordRequest(@RequestBody PasswordResetRequest passwordResetRequest,
+    public Object resetPasswordRequest(@RequestBody PasswordResetRequest passwordResetRequest,
                                        final HttpServletRequest request) throws MessagingException, UnsupportedEncodingException {
-        Optional<User> user = authenticationService.findByEmail(passwordResetRequest.getEmail());
         String passwordResetUrl = "";
-        if (user.isPresent()) {
-            String passwordResetToken = UUID.randomUUID().toString();
-            authenticationService.createPasswordResetTokenForUser(user.get(), passwordResetToken);
-            passwordResetUrl = passwordResetEmailLink(user.get(), applicationUrl(request), passwordResetToken);
-        }
-
+        Optional<User> user = authenticationService.findByEmail(passwordResetRequest.getEmail());
+            if (user.isPresent()) {
+                try {
+                    String passwordResetToken = UUID.randomUUID().toString();
+                    authenticationService.createPasswordResetTokenForUser(user.get(), passwordResetToken);
+                    passwordResetUrl = passwordResetEmailLink(user.get(), applicationUrl(request), passwordResetToken);
+                } catch (Exception e) {
+                    log.error(e.getMessage());
+                    return new ResponseEntity<>("The token has been sent to your email, please check again", HttpStatus.CONFLICT);
+                }
+            }
         return passwordResetUrl;
     }
 
     private String passwordResetEmailLink(User user, String applicationUrl, String passwordResetToken) throws MessagingException, UnsupportedEncodingException {
-        String url = applicationUrl+"/register/reset-password?token="+passwordResetToken;
-        eventListener.sendPasswordResetVerificationEmail(url);
+        String url = applicationUrl+"/api/v1/auth/reset-password?token="+passwordResetToken;
+        eventListener.sendPasswordResetVerificationEmail(url, user);
         log.info("Click the link to reset your password : {}", url);
         return url;
     }
 
     @PostMapping("/reset-password")
     public String resetPassword(@RequestBody PasswordResetRequest passwordResetRequest,
-                                @RequestParam("token") String passwordResetToken) {
-        String tokenValidationResult = authenticationService.validatePasswordResetToken(passwordResetToken);
+                                @RequestParam("token") String token) {
+        String tokenValidationResult = authenticationService.validatePasswordResetToken(token);
         if (!tokenValidationResult.equalsIgnoreCase("valid")) {
             return "Invalid password reset token";
         }
-        User user = userService.findUserByPasswordToken(passwordResetToken);
+        User user = authenticationService.findUserByPasswordToken(token);
         if (user != null) {
-            userService.resetUserPassword(user, passwordResetRequest.getNewPassword());
+            authenticationService.resetUserPassword(user, passwordResetRequest.getNewPassword());
+            passwordResetTokenRepository.deleteByToken(token);
             return "Password has been reset successfully";
         }
         return "Invalid password reset token";
     }
+
+
 }

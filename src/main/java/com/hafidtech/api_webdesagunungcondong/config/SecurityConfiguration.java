@@ -43,7 +43,7 @@ public class SecurityConfiguration {
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider()).addFilterBefore(
                         jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class
-                );
+                ).logout(logout->logout.deleteCookies("dummyCookies"));
         return http.build();
     }
 

@@ -13,8 +13,8 @@ import com.hafidtech.api_webdesagunungcondong.repository.EmailSender;
 import com.hafidtech.api_webdesagunungcondong.repository.UserRepository;
 import com.hafidtech.api_webdesagunungcondong.repository.VerificationTokenRepository;
 import com.hafidtech.api_webdesagunungcondong.services.JWTService;
-import com.hafidtech.api_webdesagunungcondong.services.PasswordResetTokenService;
 import com.hafidtech.api_webdesagunungcondong.services.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -30,16 +30,16 @@ import java.util.*;
 @Service
 public class UserServiceImpl implements UserService {
 
-    private AuthenticationManager authenticationManager;
-    private JWTService jwtService;
-    private UserRepository userRepository;
-    private VerificationTokenRepository tokenRepository;
-    private PasswordEncoder passwordEncoder;
-    private EmailSender emailSender;
-    private PasswordResetTokenService passwordResetTokenService;
-    private BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JWTService jwtService;
+    private final UserRepository userRepository;
+    private final VerificationTokenRepository tokenRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailSender emailSender;
+    private final PasswordResetTokenServiceImpl passwordResetTokenService;
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public UserServiceImpl(@Lazy AuthenticationManager authenticationManager,@Lazy JWTService jwtService,@Lazy UserRepository userRepository,@Lazy VerificationTokenRepository tokenRepository,@Lazy PasswordEncoder passwordEncoder, @Lazy EmailSender emailSender, @Lazy BCryptPasswordEncoder bCryptPasswordEncoder, @Lazy PasswordResetTokenService passwordResetTokenService) {
+    public UserServiceImpl(@Lazy AuthenticationManager authenticationManager,@Lazy JWTService jwtService,@Lazy UserRepository userRepository,@Lazy VerificationTokenRepository tokenRepository,@Lazy PasswordEncoder passwordEncoder, @Lazy EmailSender emailSender, @Lazy BCryptPasswordEncoder bCryptPasswordEncoder, @Lazy PasswordResetTokenServiceImpl passwordResetTokenService) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.userRepository = userRepository;
@@ -165,5 +165,16 @@ public class UserServiceImpl implements UserService {
     @Override
     public void createPasswordResetTokenForUser(User user, String passwordToken) {
         passwordResetTokenService.createPasswordResetTokenForUser(user, passwordToken);
+    }
+
+    @Override
+    public User findUserByPasswordToken(String passwordResetToken) {
+        return passwordResetTokenService.findUserByPasswordToken(passwordResetToken).get();
+    }
+
+    @Override
+    public void resetUserPassword(User user, String newPassword) {
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 }

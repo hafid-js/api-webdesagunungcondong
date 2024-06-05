@@ -1,9 +1,8 @@
 package com.hafidtech.api_webdesagunungcondong.entities;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,10 +11,10 @@ import java.awt.*;
 import java.util.Collection;
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "user")
-@EqualsAndHashCode
 @NoArgsConstructor
 public class User implements UserDetails {
 
@@ -26,11 +25,12 @@ public class User implements UserDetails {
     private String lastName;
     private String email;
     private String password;
+    private String image;
     @Enumerated(EnumType.STRING)
     private Role role;
     private boolean isEnabled = false;
 
-    public User(Integer id, String firstName, String lastName, String email, String password, Role role, boolean isEnabled) {
+    public User(Integer id,String firstName, String lastName, String email, String password, String image, Role role, boolean isEnabled) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;

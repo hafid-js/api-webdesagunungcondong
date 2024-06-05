@@ -4,6 +4,7 @@ import com.hafidtech.api_webdesagunungcondong.entities.User;
 import com.hafidtech.api_webdesagunungcondong.repository.UserRepository;
 import com.hafidtech.api_webdesagunungcondong.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +17,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserService userService;
+    @Autowired
+    private UserService userService;
 
     @GetMapping("/list")
     public List<User> getUsers() {

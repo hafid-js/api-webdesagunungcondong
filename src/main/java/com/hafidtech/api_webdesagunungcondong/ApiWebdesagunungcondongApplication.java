@@ -10,7 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @SpringBootApplication
-public class ApiWebdesagunungcondongApplication implements CommandLineRunner {
+public class ApiWebdesagunungcondongApplication{
 
 	@Autowired
 	private UserRepository userRepository;
@@ -19,20 +19,20 @@ public class ApiWebdesagunungcondongApplication implements CommandLineRunner {
 		SpringApplication.run(ApiWebdesagunungcondongApplication.class, args);
 	}
 
-	public void run(String... args) {
-
-		User adminAccount = userRepository.findByRole(Role.ADMIN);
-		if (null == adminAccount) {
-			User user = new User();
-
-			user.setEmail("admin@gmail.com");
-			user.setFirstName("admin");
-			user.setLastName("admin");
-			user.setRole(Role.ADMIN);
-			user.setPassword(new BCryptPasswordEncoder().encode("admin"));
-			userRepository.save(user);
-		}
-
-	}
+//	public void run(String... args) {
+//
+//		User adminAccount = userRepository.findByRole(Role.ADMIN);
+//		if (null == adminAccount) {
+//			User user = new User();
+//
+//			user.setEmail("admin@gmail.com");
+//			user.setFirstName("admin");
+//			user.setLastName("admin");
+//			user.setRole(Role.ADMIN);
+//			user.setPassword(new BCryptPasswordEncoder().encode("admin"));
+//			userRepository.save(user);
+//		}
+//
+//	}
 
 }
