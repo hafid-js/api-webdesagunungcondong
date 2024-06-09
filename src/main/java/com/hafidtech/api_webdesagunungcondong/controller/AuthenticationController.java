@@ -3,13 +3,13 @@ package com.hafidtech.api_webdesagunungcondong.controller;
 import com.hafidtech.api_webdesagunungcondong.dto.*;
 import com.hafidtech.api_webdesagunungcondong.entities.User;
 import com.hafidtech.api_webdesagunungcondong.entities.token.VerificationToken;
-import com.hafidtech.api_webdesagunungcondong.event.RegistrationCompleteEvent;
 import com.hafidtech.api_webdesagunungcondong.event.listener.RegistrationCompleteEventListener;
 import com.hafidtech.api_webdesagunungcondong.logout.BlackList;
 import com.hafidtech.api_webdesagunungcondong.repository.PasswordResetTokenRepository;
 import com.hafidtech.api_webdesagunungcondong.repository.UserRepository;
 import com.hafidtech.api_webdesagunungcondong.repository.VerificationTokenRepository;
 import com.hafidtech.api_webdesagunungcondong.services.UserService;
+import com.hafidtech.api_webdesagunungcondong.services.impl.UserServiceImpl;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
@@ -21,8 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
-import javax.security.auth.login.LoginException;
+import org.springframework.web.multipart.MultipartFile;
 import java.io.UnsupportedEncodingException;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,24 +32,38 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AuthenticationController {
 
+
     private UserService authenticationService;
     private ApplicationEventPublisher publisher;
     private VerificationTokenRepository tokenRepository;
     private HttpServletRequest servletRequest;
     private RegistrationCompleteEventListener eventListener;
     private UserRepository userRepository;
+    private UserServiceImpl userServiceImpl;
     private PasswordResetTokenRepository passwordResetTokenRepository;
     private PasswordEncoder passwordEncoder;
     private BlackList blackList;
 
-
     @PostMapping("/register")
-    public String register(@RequestBody RegistrationRequest registrationRequest,  final HttpServletRequest request) {
-        User user = authenticationService.registration(registrationRequest);
-        publisher.publishEvent(new RegistrationCompleteEvent(user, applicationUrl(request)));
+    public ResponseEntity<? extends Object> register (
+            @RequestParam("firstName") String firstName,
+            @RequestParam("lastName") String lastName,
+            @RequestParam("email") String email,
+            @RequestParam("password") String password,
+            @RequestParam("file") MultipartFile file) throws Exception {
 
-        return "Success! Please, Check your email for complete your registration";
+        Optional<User> existingUser = userRepository.findByEmail(email);
+        if (existingUser.isPresent()) {
+            return new ResponseEntity<>("User with the email address '%s' already exists.", HttpStatus.CONFLICT);
+        }
 
+        User user = userServiceImpl.register(
+                firstName,
+                lastName,
+                email,
+                password,
+                file);
+                return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
     private String applicationUrl(HttpServletRequest request) {
@@ -92,12 +105,19 @@ public class AuthenticationController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<? extends Object> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<JwtAuthenticationResponse> login(@RequestBody LoginRequest loginRequest) {
         boolean isEnabled = false;
-        Optional<User> checkEmailStatus = userRepository.findByEmailAndIsEnabled(loginRequest.getEmail(), isEnabled);
-        if (checkEmailStatus.isPresent() && checkEmailStatus.get().isEnabled() == false) {
-            return new ResponseEntity<String>("you need verification your email before login", HttpStatus.UNAUTHORIZED);
-        }
+//        Optional<User> checkEmailStatus = userRepository.findByEmailAndIsEnabled(loginRequest.getEmail(), isEnabled);
+//        if (checkEmailStatus.isPresent() && checkEmailStatus.get().isEnabled() == false) {
+//            return new ResponseEntity
+//        String email = loginRequest.getEmail();
+//        String password = passwordEncoder.encode(loginRequest.getPassword());
+//        Optional<User> checkUsernameAndPassword = userRepository.findByEmailAndPassword(email, password);
+//        if (checkUsernameAndPassword.isPresent()) {
+//            return new ResponseEntity<JwtAuthenticationResponse>("username or password is incorrect", HttpStatus.UNAUTHORIZED);
+//        }
+
+
 
 //        String password = passwordEncoder.encode(loginRequest.getPassword());
 //        User checkUsernameAndPassword = userRepository.findByEmailAndPassword(loginRequest.getEmail(), password);

@@ -9,6 +9,7 @@ import com.hafidtech.api_webdesagunungcondong.entities.User;
 import com.hafidtech.api_webdesagunungcondong.entities.token.VerificationToken;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +17,7 @@ import java.util.Optional;
 public interface UserService {
 
     UserDetailsService userDetailsService();
-    User registration(RegistrationRequest registrationRequest);
+//    User registration(RegistrationRequest registrationRequest);
     JwtAuthenticationResponse login(LoginRequest loginRequest);
     VerificationToken generateNewVerificationToken(String oldToken);
     JwtAuthenticationResponse refreshToken(RefreshTokenRequest refreshTokenRequest);
