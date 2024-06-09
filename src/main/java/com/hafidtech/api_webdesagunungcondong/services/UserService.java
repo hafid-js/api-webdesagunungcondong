@@ -30,4 +30,5 @@ public interface UserService {
     void saveUserVerificationToken(User theUser, String verificationToken);
     User findUserByPasswordToken(String passwordResetToken);
     void resetUserPassword(User user, String newPassword);
+
 }

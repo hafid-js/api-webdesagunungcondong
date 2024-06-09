@@ -7,7 +7,6 @@ import com.hafidtech.api_webdesagunungcondong.dto.RefreshTokenRequest;
 import com.hafidtech.api_webdesagunungcondong.entities.Role;
 import com.hafidtech.api_webdesagunungcondong.entities.User;
 import com.hafidtech.api_webdesagunungcondong.entities.token.VerificationToken;
-import com.hafidtech.api_webdesagunungcondong.exception.FileStorageException;
 import com.hafidtech.api_webdesagunungcondong.repository.EmailSender;
 import com.hafidtech.api_webdesagunungcondong.repository.UserRepository;
 import com.hafidtech.api_webdesagunungcondong.repository.VerificationTokenRepository;
@@ -15,13 +14,8 @@ import com.hafidtech.api_webdesagunungcondong.services.JWTService;
 import com.hafidtech.api_webdesagunungcondong.services.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,7 +24,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -56,6 +50,8 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
     private VerificationTokenRepository tokenRepository;
     private PasswordEncoder passwordEncoder;
     private EmailSender emailSender;
@@ -104,6 +100,18 @@ public class UserServiceImpl implements UserService {
             throw new IOException("Could not save file: " + file.getOriginalFilename(), ioe);
         }
         return userRepository.save(user);
+    }
+
+    public User authenticate(LoginRequest input) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        input.getEmail(),
+                        input.getPassword()
+                )
+        );
+
+        return userRepository.findByEmail(input.getEmail())
+                .orElseThrow();
     }
 
 
@@ -206,5 +214,32 @@ public class UserServiceImpl implements UserService {
     public void resetUserPassword(User user, String newPassword) {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+    }
+
+    public void update(Long id, String firstName, String lastName, String email, String password, MultipartFile file) throws IOException {
+
+        Path uploadPath = Paths.get("upload/user");
+        Long id1 = id;
+        String firstName1 = firstName;
+        String lastName1 = lastName;
+        String email1 = email;
+        String password1 = password;
+        String fileName1 = file.getOriginalFilename();
+        Role role1 = Role.USER;
+        byte[] file1 = file.getBytes();
+        String type1 = file.getContentType();
+        String fileCode = file.getOriginalFilename();
+        Path filePath = uploadPath.resolve(fileCode + "-" + file.getOriginalFilename());
+        try (InputStream inputStream = file.getInputStream()) {
+            User fileName = userRepository.findFileNameById(id);
+            if(fileName != null) {
+                Files.deleteIfExists(Paths.get("upload/user/"+fileName.getFileName()));
+            }
+                 String uploadDir1 = String.valueOf(filePath);
+                 Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+                 userRepository.update(id1, firstName1, lastName1, email1, password1, fileName1, role1, file1, type1, uploadDir1);
+        } catch (IOException ioe) {
+            throw new IOException("Could not save file: " + file.getOriginalFilename(), ioe);
+        }
     }
 }

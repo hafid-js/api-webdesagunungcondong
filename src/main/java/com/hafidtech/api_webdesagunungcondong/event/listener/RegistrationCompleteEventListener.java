@@ -53,14 +53,14 @@ public class RegistrationCompleteEventListener implements ApplicationListener<Re
 
         // send the email
         try {
-            sendVerificationEmail(url);
+            sendVerificationEmail(url, user);
         } catch (MessagingException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
         log.info("Click the link to verify your registration : {}", url);
     }
 
-    public void sendVerificationEmail(String url) throws MessagingException, UnsupportedEncodingException {
+    public void sendVerificationEmail(String url, User user) throws MessagingException, UnsupportedEncodingException {
         String subject = "Email Verification";
         String senderName = "gunungcondong.com";
         String mailContent = "<p> Hi, "+ user.getFirstName()+ ", </p>"+

@@ -3,23 +3,26 @@ package com.hafidtech.api_webdesagunungcondong.controller;
 import com.hafidtech.api_webdesagunungcondong.dto.*;
 import com.hafidtech.api_webdesagunungcondong.entities.User;
 import com.hafidtech.api_webdesagunungcondong.entities.token.VerificationToken;
+import com.hafidtech.api_webdesagunungcondong.event.RegistrationCompleteEvent;
 import com.hafidtech.api_webdesagunungcondong.event.listener.RegistrationCompleteEventListener;
 import com.hafidtech.api_webdesagunungcondong.logout.BlackList;
 import com.hafidtech.api_webdesagunungcondong.repository.PasswordResetTokenRepository;
 import com.hafidtech.api_webdesagunungcondong.repository.UserRepository;
 import com.hafidtech.api_webdesagunungcondong.repository.VerificationTokenRepository;
 import com.hafidtech.api_webdesagunungcondong.services.UserService;
+import com.hafidtech.api_webdesagunungcondong.services.impl.JWTServiceImpl;
 import com.hafidtech.api_webdesagunungcondong.services.impl.UserServiceImpl;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.UnsupportedEncodingException;
@@ -30,6 +33,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/auth")
 @AllArgsConstructor
+@Transactional
 public class AuthenticationController {
 
 
@@ -43,14 +47,15 @@ public class AuthenticationController {
     private PasswordResetTokenRepository passwordResetTokenRepository;
     private PasswordEncoder passwordEncoder;
     private BlackList blackList;
+    private JWTServiceImpl jwtService;
 
     @PostMapping("/register")
-    public ResponseEntity<? extends Object> register (
+    public Object register (
             @RequestParam("firstName") String firstName,
             @RequestParam("lastName") String lastName,
             @RequestParam("email") String email,
             @RequestParam("password") String password,
-            @RequestParam("file") MultipartFile file) throws Exception {
+            @RequestParam("file") MultipartFile file, final HttpServletRequest request) throws Exception {
 
         Optional<User> existingUser = userRepository.findByEmail(email);
         if (existingUser.isPresent()) {
@@ -63,7 +68,27 @@ public class AuthenticationController {
                 email,
                 password,
                 file);
-                return new ResponseEntity<>(user, HttpStatus.OK);
+
+        publisher.publishEvent(new RegistrationCompleteEvent(user, applicationUrl(request)));
+        return "Success! Please, Check your email for complete your registration";
+    }
+
+    @PutMapping("/update/{id}")
+    public String update( @PathVariable("id") Long id,
+                          @RequestParam("firstName") String firstName,
+                          @RequestParam("lastName") String lastName,
+                          @RequestParam("email") String email,
+                          @RequestParam("password") String password,
+                          @RequestParam("file") MultipartFile file) throws Exception {
+
+        userServiceImpl.update(
+                id,
+                firstName,
+                lastName,
+                email,
+                password,
+                file);
+        return "Success! Update data";
     }
 
     private String applicationUrl(HttpServletRequest request) {
@@ -97,16 +122,27 @@ public class AuthenticationController {
 
     }
 
-    private void resendVerificationTokenEmail(User theUser, String applicationUrl, VerificationToken token) throws MessagingException, UnsupportedEncodingException {
+    private void resendVerificationTokenEmail(User user, String applicationUrl, VerificationToken token) throws MessagingException, UnsupportedEncodingException {
         String url = applicationUrl+"/api/v1/auth/verifyEmail?token="+token.getToken();
-        eventListener.sendVerificationEmail(url);
+        eventListener.sendVerificationEmail(url, user);
         log.info("Click the link to verify your registration : {}", url);
     }
 
 
     @PostMapping("/login")
     public ResponseEntity<JwtAuthenticationResponse> login(@RequestBody LoginRequest loginRequest) {
-        boolean isEnabled = false;
+
+//        User authenticatedUser = userServiceImpl.authenticate(loginRequest);
+//
+//        String jwtToken = jwtService.generateToken(authenticatedUser);
+//
+//        LoginResponse loginResponse = new LoginResponse().setToken(jwtToken).setExpiresIn(jwtService.getExpirationTime());
+//
+//        return ResponseEntity.ok(loginResponse);
+
+
+
+//        boolean isEnabled = false;
 //        Optional<User> checkEmailStatus = userRepository.findByEmailAndIsEnabled(loginRequest.getEmail(), isEnabled);
 //        if (checkEmailStatus.isPresent() && checkEmailStatus.get().isEnabled() == false) {
 //            return new ResponseEntity
@@ -130,7 +166,9 @@ public class AuthenticationController {
 //           log.info("Berhasil");
 //        }
 
-        return ResponseEntity.ok(authenticationService.login(loginRequest));
+//        return ResponseEntity.ok(JwtAuthenticationResponse);
+
+        return  null;
     }
 
 

@@ -1,7 +1,9 @@
 package com.hafidtech.api_webdesagunungcondong.services.impl;
 
 import com.hafidtech.api_webdesagunungcondong.entities.User;
+import com.hafidtech.api_webdesagunungcondong.entities.token.VerificationToken;
 import com.hafidtech.api_webdesagunungcondong.logout.BlackList;
+import com.hafidtech.api_webdesagunungcondong.repository.VerificationTokenRepository;
 import com.hafidtech.api_webdesagunungcondong.services.JWTService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwt;
@@ -30,6 +32,9 @@ public class JWTServiceImpl implements JWTService {
     @Autowired
     private BlackList blackList;
 
+    @Autowired
+    private VerificationTokenRepository tokenRepository;
+
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder().setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
@@ -56,6 +61,7 @@ public class JWTServiceImpl implements JWTService {
         return claimsResolvers.apply(claims);
     }
 
+
     private Key getSigninKey() {
         byte[] key = Decoders.BASE64.decode("7834G384G388732478T8634T83G4379GH983H2400H92349023J490394U8Y374Y324GG585F56F548Y5");
         return Keys.hmacShaKeyFor(key);
@@ -73,4 +79,5 @@ public class JWTServiceImpl implements JWTService {
     private boolean isTokenExpired(String token) {
         return extractClaim(token, Claims::getExpiration).before(new Date());
     }
+
 }

@@ -29,8 +29,8 @@ public class User implements UserDetails {
     private String password;
     private String fileName;
     private String type;
+    @Column(length = 100000)
     @Lob
-    @Column(length = 30000)
     private byte[] file;
     @Column(name = "upload_dir")
     private String uploadDir;
